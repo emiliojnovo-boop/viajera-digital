@@ -1,0 +1,80 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Video {
+  id           String       @id @default(cuid())
+  youtubeUrl   String       @unique
+  youtubeId    String       @unique
+  title        String
+  duration     String?
+  thumbnailUrl String?
+  status       VideoStatus  @default(ANALYZING)
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  poets        Poet[]
+  analysis     Analysis[]
+
+  @@index([youtubeId])
+  @@index([status])
+  @@index([createdAt])
+  @@map("videos")
+}
+
+enum VideoStatus {
+  ANALYZING
+  COMPLETED
+  ERROR
+}
+
+model Poet {
+  id      String   @id @default(cuid())
+  videoId String
+  name    String
+  video   Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  decimas Decima[]
+
+  @@index([videoId])
+  @@index([name])
+  @@map("poets")
+}
+
+model Decima {
+  id          String   @id @default(cuid())
+  videoId     String
+  poetId      String
+  text        String   @db.Text
+  timestamp   String?
+  score       Float?
+  isTopThree  Boolean  @default(false)
+  metrics     Json?
+  createdAt   DateTime @default(now())
+  poet        Poet     @relation(fields: [poetId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+  @@index([poetId])
+  @@index([isTopThree])
+  @@index([score])
+  @@map("decimas")
+}
+
+model Analysis {
+  id                  String   @id @default(cuid())
+  videoId             String
+  totalDecimas        Int
+  averageSyllables    Float
+  rhymeAccuracy       Float
+  topPoets            Json
+  culturalContext     String?  @db.Text
+  linguisticAnalysis  Json?
+  createdAt           DateTime @default(now())
+  video               Video    @relation(fields: [videoId], references: [id], onDelete: Cascade)
+
+  @@index([videoId])
+  @@map("analyses")
+}
